@@ -52,41 +52,13 @@ def is_none(text_from_respond):
     return True
 
 import re
-def addr_right_proccess(addrr):
-    procceed=''
-    mtc = re.search(r'\d+[\,\s\-\.\b]?', addrr)
-    #print("mtc---------------" + str(mtc))
-    if mtc != None:
-        #print("mtc.group()---------------" + str(mtc.group()))
-        addr_right = addrr[addrr.find(mtc.group())+len(mtc.group()) : ]#poluchili to chto sprava ot naidennogo chisla
-        #print("addr_right---------------"+str(addr_right))
-        return addr_right_proccess(addr_right)
-    else:
-        if addrr != '':
-            procceed = ', ' + addrr
-            procceed = procceed.replace("  ", " ")
-        else:
-            procceed = addrr
-        return procceed
 
 
 def address_proccess(text_from_exel):
     dadata = Dadata(token, secret)
     digit = 0
     result = None
-    if is_punctuation(text_from_exel[0]):
-        text_from_exel = text_from_exel[text_from_exel.find(text_from_exel[0])+len(text_from_exel[0]): ]
-    text_from_exel = text_from_exel.replace("-", " ")
-    for v in text_from_exel:
-        if v.isdigit():
-            digit = digit + 1
-    if digit == 0 or digit > 10:
-        final_result = "Это точно не адрес"
-        return final_result
     
-    right_end = addr_right_proccess(text_from_exel)
-    if right_end != '':
-        text_from_exel = text_from_exel[ :text_from_exel.find(right_end)]
     #dadata_client = dadata.Dadata(timeout=10)
     result = dadata.suggest("address", text_from_exel)
     
