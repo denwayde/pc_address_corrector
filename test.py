@@ -120,4 +120,9 @@ def excel_procces(file_name, correct_address):
     wb.save(file_name)
 
 
-excel_procces('Arc.xlsx', address_proccess)
+#excel_procces('Arc.xlsx', address_proccess)
+dadata = Dadata(token, secret)
+    
+result = dadata.suggest("address", "Шингак-Куль с, Молодежная ул, 1")
+
+print(result[0])
