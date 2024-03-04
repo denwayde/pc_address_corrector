@@ -3,18 +3,20 @@ import json
 from dadata import Dadata
 from dotenv import load_dotenv
 import os
+import string
+import re
+from openpyxl import load_workbook
+from openpyxl.styles import Font, PatternFill, Border, Side
 # Загружаем переменные из файла .env
 load_dotenv()
 # Пример использования переменных
 token = os.getenv("TOKEN")
 secret = os.getenv("SECRET")
 ya_apikey = os.getenv("YA_APIKEY")
-dadata = Dadata(token, secret)
 
 
 
 
-import string
 
 def is_punctuation(char):
     return char in string.punctuation
@@ -29,11 +31,33 @@ def is_none(text_from_respond):
         return False
     return True
 
-import re 
-#<re.Match object; span=(25, 27), match='1,'>
+
+
+border_style = Border(right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+font_style = Font(bold=False, size=10)
+fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
+
+
+
+def this_phone_num(text_from_exel):
+    final_result = True
+    for v in text_from_exel:
+        if v.isdigit():
+            digit = digit + 1
+    if digit == 0 or digit >= 11:
+        final_result = False
+    return final_result
+
+def cut_all_tire(text_from_exel):
+    if is_punctuation(text_from_exel[0]):
+        text_from_exel = text_from_exel[text_from_exel.find(text_from_exel[0])+len(text_from_exel[0]): ]
+        text_from_exel = text_from_exel.replace("-", " ")
+        return text_from_exel
+
+
 def addr_right_proccess(addrr):
     procceed=''
-    mtc = re.search(r'\d+[a-zA-Zа-яА-Я]?[\,\s\-\.\b]?', addrr)
+    mtc = re.search(r'\d+[\,\s\-\.\b]?', addrr)
     #print("mtc---------------" + str(mtc))
     if mtc != None:
         #print("mtc.group()---------------" + str(mtc.group()))
@@ -47,68 +71,53 @@ def addr_right_proccess(addrr):
         else:
             procceed = addrr
         return procceed
-    
-n="Кононенко Виталий"#ETO NUJNO PROVERYAT NA NALICHIE CIFR
-n1 = "7 960 391-52-45 - Исходящий звонок" #result['result'] --- None
-s13 = "г.Уфа Менделеева ул. 128/1, гараж. Бокс 26"
-sss = "Белорецк г, Ленина , 71, ооол"
-s14 = "Межгорье г, Олимпийская ул, 3, кв.42" 
-s15 = "Белорецк г, Точисского , 15а, 44988"
 
-#print("VIVOD------------------"+ addr_right_proccess(s15))
-
-text_from_exel = ''
-right_end = addr_right_proccess(s15)
-if right_end != '':
-    text_from_exel = s15[ :s15.find(right_end)]
-    print("right_end------------------- NE pustoi " + s15[ :s15.find(right_end)])
-else:
-    print("right_end-------------------pustoi")
-
-# print(s13[s13.find(mtc)+len(mtc) : ])
-
-# result = dadata.suggest('address', sss)
-# print(result)
-
-# r = requests.get(f'https://suggest-maps.yandex.ru/v1/suggest?apikey={ya_apikey}&text={sss}&print_address=1')
-# print(json.loads(r.text)["results"][0]['address'])
-
-# check_location_arr = {}
-# house = ''
-# for x in json.loads(r.text)["results"][0]['address']['component']:
-#     if x['kind'] == ['LOCALITY']:
-#         check_location_arr['local'] = x['name']
-#     if x['kind'] == ['STREET']:
-#         st = ''
-#         for z in x['name'].split(' '):
-#             if z.istitle():
-#                st = st+" "+z 
-#         st = st.lstrip()
-#         check_location_arr['street'] = st
-#     if x['kind'] == ['HOUSE']:
-#         house = x['name']
+def right_end_proccess(text_from_exel):
+    right_end = addr_right_proccess(text_from_exel)
+    if right_end != '':
+        text_from_exel = text_from_exel[ :text_from_exel.find(right_end)]
+    return right_end
 
 
-# house_count = text_from_exel.count(house)
-# if house_count == 0:
-#     street_index = text_from_exel.find(check_location_arr['street'])
-#     substr_right = text_from_exel[street_index+len(check_location_arr['street']) : ] 
-#     #print(s13[street_index+len(check_location_arr['street']) : ])
+import httpx
+def address_proccess(text_from_exel):
+    dadata = Dadata(token, secret)
+    final_result = ''
+    try:
+        result = dadata.suggest("address", text_from_exel)
+        if result !=[]:
+            # print(result[0]['value'])
+            # excel_procces()
+            final_result = result[0]['value']
+        return final_result
+    except httpx.ConnectTimeout:
+        print("Не удалось")
+        
 
-#     substr_right_right = ''
-#     for c in substr_right:
-#         if is_punctuation(c):
-#             punct_index = substr_right.find(c)
-#             substr_right_right = substr_right[punct_index + len(c) : ]
-#             substr_right_right = ", " + substr_right_right
-#             substr_right_right = substr_right_right.replace("  ", " ")
-#             break
+def excel_procces(file_name, correct_address):
+    wb = load_workbook(file_name)#'Arc.xlsx'
+    # Выбираем активный лист
+    sheet = wb.active
+    sheet.column_dimensions['H'].width = 60
+    for idx, row in enumerate(sheet.iter_rows(min_row=2, min_col=1, max_col=1, values_only=True), start=2): 
+        try:
+            value_a = row[0]
+            if this_phone_num(value_a):
+                correct_value = address_proccess()
+            else:
+                correct_value = "Это точно не адрес"
+        except IndexError:
+            print("Vishli za predeli")
+            correct_value = "вышли за пределы"
+        finally:
+            sheet.cell(row = idx, column=8, value = correct_address(correct_value))
+            cell = sheet.cell(row=idx, column=8)
+            cell.border = border_style
+            cell.font = font_style
 
-# result1 = dadata.suggest("address", check_location_arr['local']+" "+check_location_arr['street']+ " " + house)
-# if result1 != []:
-#     final_result = result1[0]['data']['postal_code']+", "+result1[0]['data']['region']+", "+result1[0]['data']['city_with_type']+", "+result1[0]['data']['street_with_type']+", "+substr_right_right
-# else:
-#     final_result = "Невозможно преобразовать адрес. Error: in home length = 0"
+    sheet.cell(row=1, column=8, value='Адреса').font = Font(bold=True)
+    sheet.cell(row=1, column=8, value='Адреса').border = border_style
+    wb.save(file_name)
 
 
-# print(final_result)
+excel_procces('Arc.xlsx', address_proccess)
