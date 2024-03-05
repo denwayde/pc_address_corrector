@@ -29,25 +29,24 @@ def cut_all_tire(text_from_exel):
         text_from_exel = text_from_exel.replace("-", " ")
         return text_from_exel
 
-dadata = Dadata(token, secret)
-def dadata_proccess(req):
+
+def dadata_proccess(req): 
     print("ETO REQ "+ str(req))
     try:#"Уфа г, Сун-Ят-Сена ул, д.11, кв.138"
-        
+        dadata = Dadata(token, secret)
         final_result = ''
         result = dadata.suggest("address", req)
         print(result)
         if result != []:
             print(result[0]['unrestricted_value'])
             final_result = result[0]['unrestricted_value']
-        
         #dadata.close()
         print("IZ DATA PROCCESS"+final_result)
         time.sleep(1)
         return final_result   
     except httpx.ConnectTimeout:
         print('Прерыв соединения с удаленным сервером')
-        return "Ошибка при обработке запроса" 
+        #return "Ошибка при обработке запроса" 
         
             
 
@@ -59,6 +58,7 @@ def ya_maps_proccess(req):
     return final_result 
 
 def result_from_apis(req):###-----------------------chto to ne to imenno zdes
+    print("IZ RESULT FROM API "+req)
     res = dadata_proccess(cut_all_tire(req))
     if res == []:
         res1 = dadata_proccess(req)
@@ -90,7 +90,7 @@ def this_phone_num(text_from_exel):
 from openpyxl.utils.exceptions import InvalidFileException
 
 
-def excel_procces(file_name, correct_address):#VASHE NE POIMU CHTO NE TAK
+def excel_procces(file_name):#VASHE NE POIMU CHTO NE TAK
     wb = load_workbook(file_name)#'Arc.xlsx'
     # Выбираем активный лист
     sheet = wb.active
@@ -100,7 +100,7 @@ def excel_procces(file_name, correct_address):#VASHE NE POIMU CHTO NE TAK
             value_a = row[0]
             if this_phone_num(value_a):
                 # print("11111 "+value_a)
-                sheet.cell(row = idx, column=8, value = correct_address(value_a))     
+                sheet.cell(row = idx, column=8, value = result_from_apis(value_a))     
             else:
                 sheet.cell(row = idx, column=8, value = f"В ячейке A[{idx}] не адрес")
             cell = sheet.cell(row=idx, column=8)
@@ -118,7 +118,7 @@ def excel_procces(file_name, correct_address):#VASHE NE POIMU CHTO NE TAK
     print("Vse zapisano")
 
 
-excel_procces('Arc.xlsx', result_from_apis)
+excel_procces('Arc.xlsx')
         
             
 
