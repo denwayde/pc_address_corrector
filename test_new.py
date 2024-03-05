@@ -27,7 +27,7 @@ def cut_all_tire(text_from_exel):
     if is_punctuation(text_from_exel[0]):
         text_from_exel = text_from_exel[1: ]
         text_from_exel = text_from_exel.replace("-", " ")
-        return text_from_exel
+    return text_from_exel
 
 
 def dadata_proccess(req): 
