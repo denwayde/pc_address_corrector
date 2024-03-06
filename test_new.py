@@ -9,6 +9,7 @@ from openpyxl import load_workbook
 from openpyxl.styles import Font, PatternFill, Border, Side
 import httpx
 import time
+from openpyxl.utils.exceptions import InvalidFileException
 # Загружаем переменные из файла .env
 load_dotenv()
 # Пример использования переменных
@@ -31,17 +32,13 @@ def cut_all_tire(text_from_exel):
 
 
 def dadata_proccess(req): 
-    print("ETO REQ "+ str(req))
     try:#"Уфа г, Сун-Ят-Сена ул, д.11, кв.138"
         dadata = Dadata(token, secret)
         final_result = ''
         result = dadata.suggest("address", req)
-        print(result)
         if result != []:
             print(result[0]['unrestricted_value'])
             final_result = result[0]['unrestricted_value']
-        #dadata.close()
-        print("IZ DATA PROCCESS"+final_result)
         time.sleep(1)
         return final_result   
     except httpx.ConnectTimeout:
@@ -57,15 +54,16 @@ def ya_maps_proccess(req):
         final_result = json.loads(r.text)["results"][0]['address']['formatted_address']
     return final_result 
 
+
+
 def result_from_apis(req):###-----------------------chto to ne to imenno zdes
-    print("IZ RESULT FROM API "+req)
-    res = dadata_proccess(cut_all_tire(req))
+    res = dadata_proccess(req)
     if res == []:
-        res1 = dadata_proccess(req)
+        res1 = dadata_proccess(cut_all_tire(req))
         if res1 == []:
             res3 = ya_maps_proccess(req)
             if res3 == []:
-                print("res from ya api" + dadata_proccess(ya_maps_proccess(cut_all_tire(req))))
+                print("res3 from ya api" + dadata_proccess(ya_maps_proccess(cut_all_tire(req))))
                 return dadata_proccess(ya_maps_proccess(cut_all_tire(req)))
             else:
                 print("samii finalnii res"+ dadata_proccess(res3))
@@ -77,6 +75,8 @@ def result_from_apis(req):###-----------------------chto to ne to imenno zdes
         print("eto pervii result"+ dadata_proccess(cut_all_tire(req)))
         return res
 
+
+
 def this_phone_num(text_from_exel):
     final_result = True
     digit = 0
@@ -87,23 +87,33 @@ def this_phone_num(text_from_exel):
         final_result = False
     return final_result
 
-from openpyxl.utils.exceptions import InvalidFileException
 
 
 def excel_procces(file_name):#VASHE NE POIMU CHTO NE TAK
     wb = load_workbook(file_name)#'Arc.xlsx'
     # Выбираем активный лист
     sheet = wb.active
-    sheet.column_dimensions['H'].width = 60
+    sheet.column_dimensions['H'].width = 80
     for idx, row in enumerate(sheet.iter_rows(min_row=2, min_col=1, max_col=1, values_only=True), start=2): 
         try:
             value_a = row[0]
+            cell = sheet.cell(row=idx, column=8)
             if this_phone_num(value_a):
-                # print("11111 "+value_a)
-                sheet.cell(row = idx, column=8, value = result_from_apis(value_a))     
+                if result_from_apis(value_a) != '':
+                    # print("11111 "+value_a)
+                    sheet.cell(row = idx, column=8, value = result_from_apis(value_a))
+                    fill = PatternFill(start_color="BFEA7C", end_color="BFEA7C", fill_type="solid")
+                    cell.fill = fill
+                else:
+                    sheet.cell(row = idx, column=8, value = 'По непонятным разработчику причинам, не удалось нормализовать адрес.')
+                    fill = PatternFill(start_color="F6F193", end_color="F6F193", fill_type="solid")
+                    cell.fill = fill   
             else:
                 sheet.cell(row = idx, column=8, value = f"В ячейке A[{idx}] не адрес")
-            cell = sheet.cell(row=idx, column=8)
+                # Создаем объект, представляющий стиль с заполнением ячейки
+                fill = PatternFill(start_color="FFB996", end_color="FFB996", fill_type="solid")
+                cell.fill = fill
+            
             cell.border = border_style
             cell.font = font_style
             sheet.cell(row=1, column=8, value='Адреса').font = Font(bold=True)

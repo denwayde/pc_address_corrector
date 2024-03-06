@@ -6,6 +6,7 @@ import os
 import string
 import re
 from openpyxl import load_workbook
+import httpx
 from openpyxl.styles import Font, PatternFill, Border, Side
 # Загружаем переменные из файла .env
 load_dotenv()
@@ -13,8 +14,6 @@ load_dotenv()
 token = os.getenv("TOKEN")
 secret = os.getenv("SECRET")
 ya_apikey = os.getenv("YA_APIKEY")
-
-
 
 
 
@@ -30,8 +29,6 @@ def is_none(text_from_respond):
     if text_from_respond == None:
         return False
     return True
-
-
 
 border_style = Border(right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
 font_style = Font(bold=False, size=10)
@@ -52,7 +49,7 @@ def cut_all_tire(text_from_exel):
     if is_punctuation(text_from_exel[0]):
         text_from_exel = text_from_exel[text_from_exel.find(text_from_exel[0])+len(text_from_exel[0]): ]
         text_from_exel = text_from_exel.replace("-", " ")
-        return text_from_exel
+    return text_from_exel
 
 
 def addr_right_proccess(addrr):
@@ -79,7 +76,6 @@ def right_end_proccess(text_from_exel):
     return right_end
 
 
-import httpx
 def address_proccess(text_from_exel):
     dadata = Dadata(token, secret)
     final_result = ''
@@ -123,6 +119,6 @@ def excel_procces(file_name, correct_address):
 #excel_procces('Arc.xlsx', address_proccess)
 dadata = Dadata(token, secret)
     
-result = dadata.suggest("address", "Шингак-Куль с, Молодежная ул, 1")
+result = dadata.suggest("address", "Уфа г, Сельская Богородская ул, д.45, кв. 69")
 
 print(result[0])
