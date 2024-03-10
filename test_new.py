@@ -45,7 +45,24 @@ def dadata_proccess(req):
         print('Прерыв соединения с удаленным сервером')
         #return "Ошибка при обработке запроса" 
         
-            
+def correct_location(s1):
+    m = re.findall(r'[а-яa-z][А-Я]', s1)
+    if m != []:
+        for x in m:
+            r = x[0]+". "+x[1]
+            #print(r)
+            s1 = s1.replace(x, r)
+    return s1
+
+
+def correct_street(s1):
+    m = re.findall(r'\d\/[а-яА-Яa-zA-Z]', s1)
+    if m != []:
+        for x in m:
+            r = x.replace("/", "")
+            s1 = s1.replace(x, r)
+    return s1
+
 
 def ya_maps_proccess(req):
     r = requests.get(f'https://suggest-maps.yandex.ru/v1/suggest?apikey={ya_apikey}&text={req}&print_address=1')
@@ -63,16 +80,16 @@ def result_from_apis(req):###-----------------------chto to ne to imenno zdes
         if res1 == []:
             res3 = ya_maps_proccess(req)
             if res3 == []:
-                print("res3 from ya api" + dadata_proccess(ya_maps_proccess(cut_all_tire(req))))
+                #print("res3 from ya api" + dadata_proccess(ya_maps_proccess(cut_all_tire(req))))
                 return dadata_proccess(ya_maps_proccess(cut_all_tire(req)))
             else:
-                print("samii finalnii res"+ dadata_proccess(res3))
+                #print("samii finalnii res"+ dadata_proccess(res3))
                 return dadata_proccess(res3)
         else:
-            print("eto vtoroi res"+ dadata_proccess(req))
+            #print("eto vtoroi res"+ dadata_proccess(req))
             return res1
     else:
-        print("eto pervii result"+ dadata_proccess(cut_all_tire(req)))
+        #print("eto pervii result"+ dadata_proccess(cut_all_tire(req)))
         return res
 
 
@@ -97,15 +114,16 @@ def excel_procces(file_name):#VASHE NE POIMU CHTO NE TAK
     for idx, row in enumerate(sheet.iter_rows(min_row=2, min_col=1, max_col=1, values_only=True), start=2): 
         try:
             value_a = row[0]
+            value_a = correct_street(correct_location(value_a))#OBRABOTKA STROKI V YACHEIKE A: IZBAVLYAEMSYA OT KRIVIH OBOZNACHENII SELA I GORODA, I KRIVIH OBOZNACHENII DOMA
             cell = sheet.cell(row=idx, column=8)
             if this_phone_num(value_a):
-                if result_from_apis(value_a) != '':
-                    # print("11111 "+value_a)
-                    sheet.cell(row = idx, column=8, value = result_from_apis(value_a))
+                exression = result_from_apis(value_a)
+                if exression != '':
+                    sheet.cell(row = idx, column=8, value = exression)
                     fill = PatternFill(start_color="BFEA7C", end_color="BFEA7C", fill_type="solid")
                     cell.fill = fill
                 else:
-                    sheet.cell(row = idx, column=8, value = 'По непонятным разработчику причинам, не удалось нормализовать адрес.')
+                    sheet.cell(row = idx, column=8, value = 'По непонятным причинам, не удалось нормализовать адрес.')
                     fill = PatternFill(start_color="F6F193", end_color="F6F193", fill_type="solid")
                     cell.fill = fill   
             else:
@@ -128,16 +146,37 @@ def excel_procces(file_name):#VASHE NE POIMU CHTO NE TAK
     print("Vse zapisano")
 
 
-excel_procces('Arc.xlsx')
-        
-            
 
+#excel_procces('Arc.xlsx')
+    
 
-#'unrestricted_value'
-#г.Уфа Менделеева ул. 128/1, гараж. 25-------------------------------------------------------ne mojet naiti
-# СКО, г.Уфа, Черниковская ул., 16-------------------------------------------------------ne mojet naiti
-#print(result)
-#poisk-----------------Кольцевая д.66, кв. 6
-#result------- 443086, Самарская обл, г Самара, Октябрьский р-н, ул Кольцевая, д 66, кв 6
-#result------- 450112, Респ Башкортостан, г Уфа, ул Кольцевая, д 66, кв 6
-res = []
+import tkinter as tk
+from tkinter import filedialog, Text, Scrollbar, VERTICAL, END
+
+window = tk.Tk()
+window.title("Нормализатор адресов в Excel таблице")
+# Функция для обработки нажатия кнопки "Browse"
+def browse_file():
+    filename = filedialog.askopenfilename()
+    label.config(text=filename)
+
+def output_text(text):
+    output_area.insert(END, text + "\n")
+
+# Создание элементов интерфейса
+label = tk.Label(window, text="efef")
+label.pack()
+
+browse_button = tk.Button(window, text="Browse", command=browse_file)
+browse_button.pack()
+
+output_area = Text(window, height=10, width=50)
+output_area.pack()
+
+scrollbar = Scrollbar(window, command=output_area.yview)
+scrollbar.pack(side="right", fill="y")
+
+output_area.config(yscrollcommand=scrollbar.set)
+
+window.geometry("600x400")
+window.mainloop()
