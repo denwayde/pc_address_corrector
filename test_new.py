@@ -150,33 +150,4 @@ def excel_procces(file_name):#VASHE NE POIMU CHTO NE TAK
 #excel_procces('Arc.xlsx')
     
 
-import tkinter as tk
-from tkinter import filedialog, Text, Scrollbar, VERTICAL, END
 
-window = tk.Tk()
-window.title("Нормализатор адресов в Excel таблице")
-# Функция для обработки нажатия кнопки "Browse"
-def browse_file():
-    filename = filedialog.askopenfilename()
-    label.config(text=filename)
-
-def output_text(text):
-    output_area.insert(END, text + "\n")
-
-# Создание элементов интерфейса
-label = tk.Label(window, text="efef")
-label.pack()
-
-browse_button = tk.Button(window, text="Browse", command=browse_file)
-browse_button.pack()
-
-output_area = Text(window, height=10, width=50)
-output_area.pack()
-
-scrollbar = Scrollbar(window, command=output_area.yview)
-scrollbar.pack(side="right", fill="y")
-
-output_area.config(yscrollcommand=scrollbar.set)
-
-window.geometry("600x400")
-window.mainloop()
