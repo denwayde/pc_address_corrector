@@ -37,7 +37,7 @@ def dadata_proccess(req):
         final_result = ''
         result = dadata.suggest("address", req)
         if result != []:
-            print(result[0]['unrestricted_value'])
+            #print(result[0]['unrestricted_value'])
             final_result = result[0]['unrestricted_value']
         time.sleep(1)
         return final_result   
@@ -106,7 +106,7 @@ def this_phone_num(text_from_exel):
 
 
 
-def excel_procces(file_name):#VASHE NE POIMU CHTO NE TAK
+def excel_procces(file_name, prt):#VASHE NE POIMU CHTO NE TAK
     wb = load_workbook(file_name)#'Arc.xlsx'
     # Выбираем активный лист
     sheet = wb.active
@@ -115,35 +115,40 @@ def excel_procces(file_name):#VASHE NE POIMU CHTO NE TAK
         try:
             value_a = row[0]
             value_a = correct_street(correct_location(value_a))#OBRABOTKA STROKI V YACHEIKE A: IZBAVLYAEMSYA OT KRIVIH OBOZNACHENII SELA I GORODA, I KRIVIH OBOZNACHENII DOMA
-            cell = sheet.cell(row=idx, column=8)
-            if this_phone_num(value_a):
-                exression = result_from_apis(value_a)
-                if exression != '':
-                    sheet.cell(row = idx, column=8, value = exression)
-                    fill = PatternFill(start_color="BFEA7C", end_color="BFEA7C", fill_type="solid")
-                    cell.fill = fill
+            cell = sheet.cell(row=idx, column=8)#POLUCHAEM YACHEIKI IZ STOLBA h
+            #print(cell.value)
+            if cell.value == '' or cell.value == 'По непонятным причинам, не удалось нормализовать адрес.':
+                if this_phone_num(value_a):
+                    exression = result_from_apis(value_a)
+                    if exression != '':
+                        prt(exression)
+                        sheet.cell(row = idx, column=8, value = exression)
+                        fill = PatternFill(start_color="BFEA7C", end_color="BFEA7C", fill_type="solid")
+                        cell.fill = fill
+                    else:
+                        sheet.cell(row = idx, column=8, value = 'По непонятным причинам, не удалось нормализовать адрес.')
+                        fill = PatternFill(start_color="F6F193", end_color="F6F193", fill_type="solid")
+                        cell.fill = fill   
                 else:
-                    sheet.cell(row = idx, column=8, value = 'По непонятным причинам, не удалось нормализовать адрес.')
-                    fill = PatternFill(start_color="F6F193", end_color="F6F193", fill_type="solid")
-                    cell.fill = fill   
+                    sheet.cell(row = idx, column=8, value = f"В ячейке A[{idx}] не адрес")
+                    # Создаем объект, представляющий стиль с заполнением ячейки
+                    fill = PatternFill(start_color="FFB996", end_color="FFB996", fill_type="solid")
+                    cell.fill = fill
             else:
-                sheet.cell(row = idx, column=8, value = f"В ячейке A[{idx}] не адрес")
-                # Создаем объект, представляющий стиль с заполнением ячейки
-                fill = PatternFill(start_color="FFB996", end_color="FFB996", fill_type="solid")
-                cell.fill = fill
-            
+                prt(f"В ячейке H[{idx}] запись есть")
+                #pass
             cell.border = border_style
             cell.font = font_style
-            sheet.cell(row=1, column=8, value='Адреса').font = Font(bold=True)
-            sheet.cell(row=1, column=8, value='Адреса').border = border_style
         except InvalidFileException as e:
-            print(f'Ошибка при обращении к файлу: {e}')
+            prt(f'Ошибка при обращении к файлу: {e}')
         except IndexError:
-            print("Vishli za predeli")
+            prt("Vishli za predeli")
         except Exception as e:
-            print(f'Произошла непредвиденная ошибка: {e}')
+            prt(f'Произошла непредвиденная ошибка: {e}')
+    sheet.cell(row=1, column=8, value='Адреса').font = Font(bold=True)
+    sheet.cell(row=1, column=8, value='Адреса').border = border_style
     wb.save(file_name)       
-    print("Vse zapisano")
+    prt("Vse zapisano")
 
 
 
