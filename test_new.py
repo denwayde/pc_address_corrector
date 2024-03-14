@@ -42,7 +42,7 @@ def dadata_proccess(req):
         time.sleep(1)
         return final_result   
     except httpx.ConnectTimeout:
-        print('Прерыв соединения с удаленным сервером')
+        dispaly_text('Прерыв соединения с удаленным сервером')
         #return "Ошибка при обработке запроса" 
         
 def correct_location(s1):
@@ -106,7 +106,7 @@ def this_phone_num(text_from_exel):
 
 
 
-def excel_procces(file_name, prt):#VASHE NE POIMU CHTO NE TAK
+def excel_procces(file_name):#VASHE NE POIMU CHTO NE TAK
     wb = load_workbook(file_name)#'Arc.xlsx'
     # Выбираем активный лист
     sheet = wb.active
@@ -116,12 +116,12 @@ def excel_procces(file_name, prt):#VASHE NE POIMU CHTO NE TAK
             value_a = row[0]
             value_a = correct_street(correct_location(value_a))#OBRABOTKA STROKI V YACHEIKE A: IZBAVLYAEMSYA OT KRIVIH OBOZNACHENII SELA I GORODA, I KRIVIH OBOZNACHENII DOMA
             cell = sheet.cell(row=idx, column=8)#POLUCHAEM YACHEIKI IZ STOLBA h
-            #print(cell.value)
-            if cell.value == '' or cell.value == 'По непонятным причинам, не удалось нормализовать адрес.':
+            # print(cell.value)
+            if cell.value == None or cell.value == '' or cell.value == 'По непонятным причинам, не удалось нормализовать адрес.':
                 if this_phone_num(value_a):
                     exression = result_from_apis(value_a)
                     if exression != '':
-                        prt(exression)
+                        dispaly_text(exression)
                         sheet.cell(row = idx, column=8, value = exression)
                         fill = PatternFill(start_color="BFEA7C", end_color="BFEA7C", fill_type="solid")
                         cell.fill = fill
@@ -135,24 +135,99 @@ def excel_procces(file_name, prt):#VASHE NE POIMU CHTO NE TAK
                     fill = PatternFill(start_color="FFB996", end_color="FFB996", fill_type="solid")
                     cell.fill = fill
             else:
-                prt(f"В ячейке H[{idx}] запись есть")
+                dispaly_text(f"В ячейке H[{idx}] запись есть")
                 #pass
             cell.border = border_style
             cell.font = font_style
         except InvalidFileException as e:
-            prt(f'Ошибка при обращении к файлу: {e}')
+            dispaly_text(f'Ошибка при обращении к файлу: {e}')
         except IndexError:
-            prt("Vishli za predeli")
+            dispaly_text("Vishli za predeli")
         except Exception as e:
-            prt(f'Произошла непредвиденная ошибка: {e}')
+            dispaly_text(f'Произошла непредвиденная ошибка: {e}')
     sheet.cell(row=1, column=8, value='Адреса').font = Font(bold=True)
     sheet.cell(row=1, column=8, value='Адреса').border = border_style
     wb.save(file_name)       
-    prt("Vse zapisano")
+    dispaly_text("Vse zapisano")
 
 
 
-#excel_procces('Arc.xlsx')
+#excel_procces('Arc.xlsx', print)
+
+
+from tkinter import *
+from tkinter import ttk, filedialog
+from datetime import datetime as dt 
+from test_new import excel_procces
+
+
+root = Tk()
+root.title("Нормализатор адресов в Excel таблице")
+# Функция для обработки нажатия кнопки "Browse"
+
+
+
+def display():
+    label['text'] = entry.get()
+
+#filename_global = StringVar()
+
+def browse_file():
+    filename = filedialog.askopenfilename(filetypes=[('Excel files', '*.xlsx')])
+    entry.configure(state="normal")
+    # filename_global = filename
+    entry.insert(0, filename)
+    entry.configure(state="disabled")
+
+
+def click():
+    window = Tk()
+    window.title("Внимание")
+    window.geometry("250x200")
+    label = ttk.Label(window, text=" Файл который Вы\nсобераетесь редактировать,\nдолжен быть закрыт", justify="center")
+    label.pack(expand=1)
+    close_button = ttk.Button(window, text="Начинаем", command=lambda: start())
+    close_button.pack(anchor="center", expand=1)
+
+
+def start():
+    excel_procces(entry.get(), dispaly_text)
+    #await func
     
+
+def dispaly_text(new_string):
+    editor.configure(state="normal")
+    editor.insert(END, new_string+"\n")
+    editor.configure(state="disabled")
+
+label = ttk.Label(text="Выберите excel - файл для нормализации адресов")
+label.grid(column=0, row=0, sticky="w", pady=(10, 0))
+
+entry = ttk.Entry(state="disabled")
+entry.grid(column=0, row=1, padx=4, pady=4, sticky="ew")
+
+btn = ttk.Button(text="Выбрать файл", width=20, command=browse_file)
+btn.grid(column=1, row=1, padx=4, pady=4, sticky="w")
+
+btn1 = ttk.Button(text="Пуск", width=20, command=lambda: excel_procces(entry.get()))
+btn1.grid(column=2, row=1, padx=4, pady=4, sticky="w")
+
+editor = Text(width=55, height=15, state="disabled", background="#002451", foreground="#CCCCB4")
+editor.grid(column=0, row=3, padx=(4,0), pady=(4,20), sticky="ew")
+
+
+ys = ttk.Scrollbar(orient = "vertical", command = editor.yview)
+ys.grid(column = 1, row = 3, pady=(4,20), sticky = "wsn")
+editor["yscrollcommand"] = ys.set
+
+btn = ttk.Button(text="Отмена", width=20, command=lambda: root.destroy())
+btn.grid(column=2, row=4, padx=4, pady=(0, 4), sticky="w")
+
+
+label = ttk.Label(text=f"Copyright {dt.now().year}. G.D.R.")
+label.grid(column=0, row=4, sticky="ew", pady=(10, 0), padx=4)
+
+root.geometry("725x400")
+root.mainloop()
 
 
