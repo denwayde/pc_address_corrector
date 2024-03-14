@@ -30,20 +30,32 @@ def click():
     window.geometry("250x200")
     label = ttk.Label(window, text=" Файл который Вы\nсобераетесь редактировать,\nдолжен быть закрыт", justify="center")
     label.pack(expand=1)
-    close_button = ttk.Button(window, text="Начинаем", command=lambda: start())
+    close_button = ttk.Button(window, text="Начинаем", command=lambda: start(window))
     close_button.pack(anchor="center", expand=1)
 
 
-def start():
-    excel_procces(entry.get(), dispaly_text)
-    #await func
+def start(window):
+    window.destroy()  # закрываем окно "Внимание"
+    #asyncio.create_task(excel_procces(entry.get(), dispaly_text))
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(excel_procces(entry.get(), dispaly_text))
+
+
+# def start(window):
+#     asyncio.run(excel_procces(entry.get(), dispaly_text))
+#     asyncio.run(close(window))
     
 
-def dispaly_text(new_string):
+async def close(window):
+    await window.destroy()    
+
+async def dispaly_text(new_string):
     editor.configure(state="normal")
     editor.insert(END, new_string+"\n")
     editor.configure(state="disabled")
     editor.update_idletasks()
+    await asyncio.sleep(0.1)
 
 label = ttk.Label(text="Выберите excel - файл для нормализации адресов")
 label.grid(column=0, row=0, sticky="w", pady=(10, 0))
@@ -54,7 +66,7 @@ entry.grid(column=0, row=1, padx=4, pady=4, sticky="ew")
 btn = ttk.Button(text="Выбрать файл", width=20, command=browse_file)
 btn.grid(column=1, row=1, padx=4, pady=4, sticky="w")
 
-btn1 = ttk.Button(text="Пуск", width=20, command=lambda: excel_procces(entry.get(), dispaly_text))
+btn1 = ttk.Button(text="Пуск", width=20, command=click)
 btn1.grid(column=2, row=1, padx=4, pady=4, sticky="w")
 
 label = ttk.Label()

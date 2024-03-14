@@ -10,6 +10,7 @@ from openpyxl.styles import Font, PatternFill, Border, Side
 import httpx
 import time
 from openpyxl.utils.exceptions import InvalidFileException
+import asyncio
 # Загружаем переменные из файла .env
 load_dotenv()
 # Пример использования переменных
@@ -31,7 +32,7 @@ def cut_all_tire(text_from_exel):
     return text_from_exel
 
 
-def dadata_proccess(req): 
+async def dadata_proccess(req): 
     try:#"Уфа г, Сун-Ят-Сена ул, д.11, кв.138"
         dadata = Dadata(token, secret)
         final_result = ''
@@ -39,10 +40,10 @@ def dadata_proccess(req):
         if result != []:
             #print(result[0]['unrestricted_value'])
             final_result = result[0]['unrestricted_value']
-        time.sleep(1)
+        await asyncio.sleep(1)
         return final_result   
     except httpx.ConnectTimeout:
-        dispaly_text('Прерыв соединения с удаленным сервером')
+        print('Прерыв соединения с удаленным сервером')
         #return "Ошибка при обработке запроса" 
         
 def correct_location(s1):
@@ -64,7 +65,7 @@ def correct_street(s1):
     return s1
 
 
-def ya_maps_proccess(req):
+async def ya_maps_proccess(req):
     r = requests.get(f'https://suggest-maps.yandex.ru/v1/suggest?apikey={ya_apikey}&text={req}&print_address=1')
     final_result = ''
     if hasattr(json.loads(r.text), 'results') or 'results' in json.loads(r.text):
@@ -73,12 +74,12 @@ def ya_maps_proccess(req):
 
 
 
-def result_from_apis(req):###-----------------------chto to ne to imenno zdes
-    res = dadata_proccess(req)
+async def result_from_apis(req):###-----------------------chto to ne to imenno zdes
+    res = await dadata_proccess(req)
     if res == []:
-        res1 = dadata_proccess(cut_all_tire(req))
+        res1 = await dadata_proccess(cut_all_tire(req))
         if res1 == []:
-            res3 = ya_maps_proccess(req)
+            res3 = await ya_maps_proccess(req)
             if res3 == []:
                 #print("res3 from ya api" + dadata_proccess(ya_maps_proccess(cut_all_tire(req))))
                 return dadata_proccess(ya_maps_proccess(cut_all_tire(req)))
@@ -106,7 +107,7 @@ def this_phone_num(text_from_exel):
 
 
 
-def excel_procces(file_name):#VASHE NE POIMU CHTO NE TAK
+async def excel_procces(file_name, dispaly_text):#VASHE NE POIMU CHTO NE TAK
     wb = load_workbook(file_name)#'Arc.xlsx'
     # Выбираем активный лист
     sheet = wb.active
@@ -119,9 +120,9 @@ def excel_procces(file_name):#VASHE NE POIMU CHTO NE TAK
             # print(cell.value)
             if cell.value == None or cell.value == '' or cell.value == 'По непонятным причинам, не удалось нормализовать адрес.':
                 if this_phone_num(value_a):
-                    exression = result_from_apis(value_a)
+                    exression = await result_from_apis(value_a)
                     if exression != '':
-                        dispaly_text(exression)
+                        await dispaly_text(exression)
                         sheet.cell(row = idx, column=8, value = exression)
                         fill = PatternFill(start_color="BFEA7C", end_color="BFEA7C", fill_type="solid")
                         cell.fill = fill
@@ -135,99 +136,23 @@ def excel_procces(file_name):#VASHE NE POIMU CHTO NE TAK
                     fill = PatternFill(start_color="FFB996", end_color="FFB996", fill_type="solid")
                     cell.fill = fill
             else:
-                dispaly_text(f"В ячейке H[{idx}] запись есть")
+                await dispaly_text(f"В ячейке H[{idx}] запись есть")
                 #pass
             cell.border = border_style
             cell.font = font_style
         except InvalidFileException as e:
-            dispaly_text(f'Ошибка при обращении к файлу: {e}')
+            await dispaly_text(f'Ошибка при обращении к файлу: {e}')
         except IndexError:
-            dispaly_text("Vishli za predeli")
+            await dispaly_text("Vishli za predeli")
         except Exception as e:
-            dispaly_text(f'Произошла непредвиденная ошибка: {e}')
+            await dispaly_text(f'Произошла непредвиденная ошибка: {e}')
     sheet.cell(row=1, column=8, value='Адреса').font = Font(bold=True)
     sheet.cell(row=1, column=8, value='Адреса').border = border_style
     wb.save(file_name)       
-    dispaly_text("Vse zapisano")
+    await dispaly_text("Vse zapisano")
 
 
 
 #excel_procces('Arc.xlsx', print)
-
-
-from tkinter import *
-from tkinter import ttk, filedialog
-from datetime import datetime as dt 
-from test_new import excel_procces
-
-
-root = Tk()
-root.title("Нормализатор адресов в Excel таблице")
-# Функция для обработки нажатия кнопки "Browse"
-
-
-
-def display():
-    label['text'] = entry.get()
-
-#filename_global = StringVar()
-
-def browse_file():
-    filename = filedialog.askopenfilename(filetypes=[('Excel files', '*.xlsx')])
-    entry.configure(state="normal")
-    # filename_global = filename
-    entry.insert(0, filename)
-    entry.configure(state="disabled")
-
-
-def click():
-    window = Tk()
-    window.title("Внимание")
-    window.geometry("250x200")
-    label = ttk.Label(window, text=" Файл который Вы\nсобераетесь редактировать,\nдолжен быть закрыт", justify="center")
-    label.pack(expand=1)
-    close_button = ttk.Button(window, text="Начинаем", command=lambda: start())
-    close_button.pack(anchor="center", expand=1)
-
-
-def start():
-    excel_procces(entry.get(), dispaly_text)
-    #await func
-    
-
-def dispaly_text(new_string):
-    editor.configure(state="normal")
-    editor.insert(END, new_string+"\n")
-    editor.configure(state="disabled")
-
-label = ttk.Label(text="Выберите excel - файл для нормализации адресов")
-label.grid(column=0, row=0, sticky="w", pady=(10, 0))
-
-entry = ttk.Entry(state="disabled")
-entry.grid(column=0, row=1, padx=4, pady=4, sticky="ew")
-
-btn = ttk.Button(text="Выбрать файл", width=20, command=browse_file)
-btn.grid(column=1, row=1, padx=4, pady=4, sticky="w")
-
-btn1 = ttk.Button(text="Пуск", width=20, command=lambda: excel_procces(entry.get()))
-btn1.grid(column=2, row=1, padx=4, pady=4, sticky="w")
-
-editor = Text(width=55, height=15, state="disabled", background="#002451", foreground="#CCCCB4")
-editor.grid(column=0, row=3, padx=(4,0), pady=(4,20), sticky="ew")
-
-
-ys = ttk.Scrollbar(orient = "vertical", command = editor.yview)
-ys.grid(column = 1, row = 3, pady=(4,20), sticky = "wsn")
-editor["yscrollcommand"] = ys.set
-
-btn = ttk.Button(text="Отмена", width=20, command=lambda: root.destroy())
-btn.grid(column=2, row=4, padx=4, pady=(0, 4), sticky="w")
-
-
-label = ttk.Label(text=f"Copyright {dt.now().year}. G.D.R.")
-label.grid(column=0, row=4, sticky="ew", pady=(10, 0), padx=4)
-
-root.geometry("725x400")
-root.mainloop()
 
 
