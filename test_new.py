@@ -40,7 +40,7 @@ async def dadata_proccess(req):
         if result != []:
             #print(result[0]['unrestricted_value'])
             final_result = result[0]['unrestricted_value']
-        await asyncio.sleep(1)
+        await asyncio.sleep(0)
         return final_result   
     except httpx.ConnectTimeout:
         print('Прерыв соединения с удаленным сервером')
@@ -146,6 +146,7 @@ async def excel_procces(file_name, dispaly_text):#VASHE NE POIMU CHTO NE TAK
             await dispaly_text("Vishli za predeli")
         except Exception as e:
             await dispaly_text(f'Произошла непредвиденная ошибка: {e}')
+        await asyncio.sleep(1)
     sheet.cell(row=1, column=8, value='Адреса').font = Font(bold=True)
     sheet.cell(row=1, column=8, value='Адреса').border = border_style
     wb.save(file_name)       
