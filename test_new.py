@@ -107,50 +107,53 @@ def this_phone_num(text_from_exel):
 
 
 
-async def excel_procces(file_name, dispaly_text):#VASHE NE POIMU CHTO NE TAK
-    wb = load_workbook(file_name)#'Arc.xlsx'
-    # Выбираем активный лист
-    sheet = wb.active
-    sheet.column_dimensions['H'].width = 80
-    for idx, row in enumerate(sheet.iter_rows(min_row=2, min_col=1, max_col=1, values_only=True), start=2): 
-        try:
-            value_a = row[0]
-            value_a = correct_street(correct_location(value_a))#OBRABOTKA STROKI V YACHEIKE A: IZBAVLYAEMSYA OT KRIVIH OBOZNACHENII SELA I GORODA, I KRIVIH OBOZNACHENII DOMA
-            cell = sheet.cell(row=idx, column=8)#POLUCHAEM YACHEIKI IZ STOLBA h
-            # print(cell.value)
-            if cell.value == None or cell.value == '' or cell.value == 'По непонятным причинам, не удалось нормализовать адрес.':
-                if this_phone_num(value_a):
-                    exression = await result_from_apis(value_a)
-                    if exression != '':
-                        await dispaly_text(exression)
-                        sheet.cell(row = idx, column=8, value = exression)
-                        fill = PatternFill(start_color="BFEA7C", end_color="BFEA7C", fill_type="solid")
-                        cell.fill = fill
+async def excel_procces(file_name, dispaly_text):
+    try:
+        wb = load_workbook(file_name)#'Arc.xlsx'
+        # Выбираем активный лист
+        sheet = wb.active
+        sheet.column_dimensions['H'].width = 80
+        for idx, row in enumerate(sheet.iter_rows(min_row=2, min_col=1, max_col=1, values_only=True), start=2): 
+            try:
+                value_a = row[0]
+                value_a = correct_street(correct_location(value_a))#OBRABOTKA STROKI V YACHEIKE A: IZBAVLYAEMSYA OT KRIVIH OBOZNACHENII SELA I GORODA, I KRIVIH OBOZNACHENII DOMA
+                cell = sheet.cell(row=idx, column=8)#POLUCHAEM YACHEIKI IZ STOLBA h
+                # print(cell.value)
+                if cell.value == None or cell.value == '' or cell.value == 'По непонятным причинам, не удалось нормализовать адрес.':
+                    if this_phone_num(value_a):
+                        exression = await result_from_apis(value_a)
+                        if exression != '':
+                            await dispaly_text(exression)
+                            sheet.cell(row = idx, column=8, value = exression)
+                            fill = PatternFill(start_color="BFEA7C", end_color="BFEA7C", fill_type="solid")
+                            cell.fill = fill
+                        else:
+                            sheet.cell(row = idx, column=8, value = 'По непонятным причинам, не удалось нормализовать адрес.')
+                            fill = PatternFill(start_color="F6F193", end_color="F6F193", fill_type="solid")
+                            cell.fill = fill   
                     else:
-                        sheet.cell(row = idx, column=8, value = 'По непонятным причинам, не удалось нормализовать адрес.')
-                        fill = PatternFill(start_color="F6F193", end_color="F6F193", fill_type="solid")
-                        cell.fill = fill   
+                        sheet.cell(row = idx, column=8, value = f"В ячейке A[{idx}] не адрес")
+                        # Создаем объект, представляющий стиль с заполнением ячейки
+                        fill = PatternFill(start_color="FFB996", end_color="FFB996", fill_type="solid")
+                        cell.fill = fill
                 else:
-                    sheet.cell(row = idx, column=8, value = f"В ячейке A[{idx}] не адрес")
-                    # Создаем объект, представляющий стиль с заполнением ячейки
-                    fill = PatternFill(start_color="FFB996", end_color="FFB996", fill_type="solid")
-                    cell.fill = fill
-            else:
-                await dispaly_text(f"В ячейке H[{idx}] запись есть")
-                #pass
-            cell.border = border_style
-            cell.font = font_style
-        except InvalidFileException as e:
-            await dispaly_text(f'Ошибка при обращении к файлу: {e}')
-        except IndexError:
-            await dispaly_text("Vishli za predeli")
-        except Exception as e:
-            await dispaly_text(f'Произошла непредвиденная ошибка: {e}')
-        await asyncio.sleep(1)
-    sheet.cell(row=1, column=8, value='Адреса').font = Font(bold=True)
-    sheet.cell(row=1, column=8, value='Адреса').border = border_style
-    wb.save(file_name)       
-    await dispaly_text("Vse zapisano")
+                    await dispaly_text(f"В ячейке H[{idx}] запись есть")
+                    #pass
+                cell.border = border_style
+                cell.font = font_style
+            except InvalidFileException as e:
+                await dispaly_text(f'Ошибка при обращении к файлу: {e}')
+            except IndexError:
+                await dispaly_text("Vishli za predeli")
+            except Exception as e:
+                await dispaly_text(f'Произошла непредвиденная ошибка: {e}')
+            await asyncio.sleep(1)
+        sheet.cell(row=1, column=8, value='Адреса').font = Font(bold=True)
+        sheet.cell(row=1, column=8, value='Адреса').border = border_style
+        wb.save(file_name)       
+        await dispaly_text("Запись завершена")
+    except asyncio.CancelledError:
+        await dispaly_text("Отмена...")
 
 
 
